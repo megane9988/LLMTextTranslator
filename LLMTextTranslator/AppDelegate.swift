@@ -1,8 +1,12 @@
 import Cocoa
+import AVFoundation
 
 class AppDelegate: NSObject, NSApplicationDelegate {
     var statusItem: NSStatusItem!
     var permissionTimer: Timer?
+    var audioRecorder: AVAudioRecorder?
+    var isRecording = false
+    var recordingURL: URL?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         print("App launched")
@@ -94,21 +98,36 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let menu = NSMenu()
         let quitItem = NSMenuItem(title: "Quit", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         let testItem = NSMenuItem(title: "Test Translation", action: #selector(testTranslation), keyEquivalent: "")
+        let testRecordingItem = NSMenuItem(title: "Test Recording", action: #selector(testRecording), keyEquivalent: "")
         testItem.target = self
+        testRecordingItem.target = self
         
         menu.addItem(testItem)
+        menu.addItem(testRecordingItem)
         menu.addItem(NSMenuItem.separator())
         menu.addItem(quitItem)
         statusItem.menu = menu
         
         print("メニューを設定した")
+        
+        // 音声録音権限をリクエスト
+        requestMicrophonePermission()
 
         NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { [weak self] event in
             print("キーイベント検出: keyCode=\(event.keyCode), modifiers=\(event.modifierFlags)")
+            
+            // ⌘ + ⌥ + ⇧ + T (翻訳)
             if event.modifierFlags.contains([.command, .option, .shift]) &&
                 event.keyCode == 17 {
-                print("ショートカット検出！")
+                print("翻訳ショートカット検出！")
                 self?.translateSelectedText()
+            }
+            
+            // ⌘ + ⌥ + ⇧ + R (録音)
+            if event.modifierFlags.contains([.command, .option, .shift]) &&
+                event.keyCode == 15 {
+                print("録音ショートカット検出！")
+                self?.toggleRecording()
             }
         }
         
@@ -116,9 +135,53 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         print("アプリのセットアップ完了")
     }
     
+    func requestMicrophonePermission() {
+        // macOSでのマイクロフォン権限チェック
+        if #available(macOS 10.14, *) {
+            switch AVCaptureDevice.authorizationStatus(for: .audio) {
+            case .authorized:
+                print("マイクロフォン権限は既に許可済み")
+            case .denied, .restricted:
+                print("マイクロフォン権限が拒否されている")
+                showPermissionAlert()
+            case .notDetermined:
+                AVCaptureDevice.requestAccess(for: .audio) { granted in
+                    DispatchQueue.main.async {
+                        if granted {
+                            print("マイクロフォン権限が許可された")
+                        } else {
+                            print("マイクロフォン権限が拒否された")
+                            self.showPermissionAlert()
+                        }
+                    }
+                }
+            @unknown default:
+                print("不明なマイクロフォン権限状態")
+            }
+        }
+    }
+    
+    func showPermissionAlert() {
+        let alert = NSAlert()
+        alert.messageText = "マイクロフォン権限が必要"
+        alert.informativeText = "音声録音機能を使用するにはマイクロフォンへのアクセスを許可してください"
+        alert.addButton(withTitle: "OK")
+        alert.addButton(withTitle: "設定を開く")
+        
+        let response = alert.runModal()
+        if response == .alertSecondButtonReturn {
+            NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone")!)
+        }
+    }
+    
     @objc func testTranslation() {
         print("テスト翻訳を実行")
         showPopup(text: "テスト: アプリが正常に動作している")
+    }
+
+    @objc func testRecording() {
+        print("テスト録音を実行")
+        toggleRecording()
     }
 
     func translateSelectedText() {
@@ -165,7 +228,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         let prompt = "Translate the following text between English and Japanese depending on its original language:\n\(text)"
         let json: [String: Any] = [
-            "model": "gpt-4",
+            "model": "gpt-3.5-turbo",
             "messages": [
                 ["role": "system", "content": "You are a translator."],
                 ["role": "user", "content": prompt]
@@ -218,6 +281,166 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             } catch {
                 print("JSON解析エラー: \(error)")
             }
+        }.resume()
+    }
+
+    func toggleRecording() {
+        if isRecording {
+            stopRecording()
+        } else {
+            startRecording()
+        }
+    }
+    
+    func startRecording() {
+        print("録音開始")
+        
+        // 一時ファイルのURL
+        let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        recordingURL = documentsPath.appendingPathComponent("recording_\(Date().timeIntervalSince1970).m4a")
+        
+        // 録音設定（macOS用）
+        let settings: [String: Any] = [
+            AVFormatIDKey: Int(kAudioFormatMPEG4AAC),
+            AVSampleRateKey: 44100.0,
+            AVNumberOfChannelsKey: 1,
+            AVEncoderAudioQualityKey: AVAudioQuality.high.rawValue
+        ]
+        
+        do {
+            audioRecorder = try AVAudioRecorder(url: recordingURL!, settings: settings)
+            audioRecorder?.record()
+            isRecording = true
+            
+            // ステータスバーのアイコンを変更
+            statusItem.button?.title = "🔴"
+            print("録音中...")
+            
+            showPopup(text: "録音中... ⌘ + ⌥ + ⇧ + R で停止")
+            
+        } catch {
+            print("録音開始エラー: \(error)")
+        }
+    }
+    
+    func stopRecording() {
+        print("録音停止")
+        
+        audioRecorder?.stop()
+        isRecording = false
+        
+        // ステータスバーのアイコンを元に戻す
+        statusItem.button?.title = "🌐"
+        
+        if let url = recordingURL {
+            print("録音ファイル: \(url.path)")
+            convertToMP3AndTranscribe(audioURL: url)
+        }
+    }
+    
+    func convertToMP3AndTranscribe(audioURL: URL) {
+        print("音声ファイルを処理中...")
+        
+        // M4AファイルをそのままWhisperに送信（MP3変換は省略してシンプルに）
+        transcribeAudio(audioURL: audioURL)
+    }
+    
+    func transcribeAudio(audioURL: URL) {
+        print("Whisper API で文字起こし中...")
+        
+        let apiKey = "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"
+        
+        guard let url = URL(string: "https://api.openai.com/v1/audio/transcriptions") else {
+            print("URL作成に失敗")
+            return
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+        
+        let boundary = UUID().uuidString
+        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+        
+        var data = Data()
+        
+        // モデルパラメータ
+        data.append("--\(boundary)\r\n".data(using: .utf8)!)
+        data.append("Content-Disposition: form-data; name=\"model\"\r\n\r\n".data(using: .utf8)!)
+        data.append("whisper-1\r\n".data(using: .utf8)!)
+        
+        // 言語パラメータ（日本語と英語を自動認識）
+        data.append("--\(boundary)\r\n".data(using: .utf8)!)
+        data.append("Content-Disposition: form-data; name=\"language\"\r\n\r\n".data(using: .utf8)!)
+        data.append("ja\r\n".data(using: .utf8)!)
+        
+        // プロンプトパラメータを追加（フィラー音除去指示）
+        data.append("--\(boundary)\r\n".data(using: .utf8)!)
+        data.append("Content-Disposition: form-data; name=\"prompt\"\r\n\r\n".data(using: .utf8)!)
+        data.append("Remove filler sounds and meaningless interjections, and convert it into clear and easy-to-read text.".data(using: .utf8)!)
+        data.append("\r\n".data(using: .utf8)!)
+        
+        // ファイルデータ
+        do {
+            let audioData = try Data(contentsOf: audioURL)
+            data.append("--\(boundary)\r\n".data(using: .utf8)!)
+            data.append("Content-Disposition: form-data; name=\"file\"; filename=\"audio.m4a\"\r\n".data(using: .utf8)!)
+            data.append("Content-Type: audio/mp4\r\n\r\n".data(using: .utf8)!)
+            data.append(audioData)
+            data.append("\r\n".data(using: .utf8)!)
+        } catch {
+            print("音声ファイル読み込みエラー: \(error)")
+            return
+        }
+        
+        data.append("--\(boundary)--\r\n".data(using: .utf8)!)
+        request.httpBody = data
+        
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            if let error = error {
+                print("ネットワークエラー: \(error)")
+                DispatchQueue.main.async {
+                    self.showPopup(text: "ネットワークエラー")
+                }
+                return
+            }
+            
+            if let httpResponse = response as? HTTPURLResponse {
+                print("HTTPステータス: \(httpResponse.statusCode)")
+            }
+            
+            guard let data = data else {
+                print("データがない")
+                return
+            }
+            
+            do {
+                if let result = try JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                    print("Whisper APIレスポンス: \(result)")
+                    
+                    if let text = result["text"] as? String {
+                        DispatchQueue.main.async {
+                            self.showPopup(text: "文字起こし結果:\n\n\(text)")
+                        }
+                    } else if let error = result["error"] as? [String: Any] {
+                        print("Whisper API エラー: \(error)")
+                        DispatchQueue.main.async {
+                            self.showPopup(text: "文字起こしエラー")
+                        }
+                    }
+                }
+            } catch {
+                print("JSON解析エラー: \(error)")
+                if let responseString = String(data: data, encoding: .utf8) {
+                    print("レスポンス内容: \(responseString)")
+                }
+            }
+            
+            // 一時ファイルを削除
+            DispatchQueue.main.async {
+                try? FileManager.default.removeItem(at: audioURL)
+            }
+            
         }.resume()
     }
 
@@ -278,4 +501,3 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 }
-
