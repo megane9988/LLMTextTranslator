@@ -9,9 +9,12 @@ import SwiftUI
 
 @main
 struct LLMTextTranslatorApp: App {
+    @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+
     var body: some Scene {
-        WindowGroup {
-            ContentView()
+        // ウィンドウ不要の場合は empty にしてしまってOK
+        Settings {
+            EmptyView()
         }
     }
 }
