@@ -21,6 +21,13 @@ A macOS menu bar application that provides real-time text translation and voice 
 - Lightweight menu bar app with globe icon (🌐)
 - Test functions available through menu
 - Clean, minimal interface
+- **Auto-launch at login**: Automatically start the app when you log in to macOS
+
+### ⚙️ Auto-Launch at Login
+- Configure the app to start automatically when you log in to macOS
+- Uses Apple's modern Service Management framework (SMAppService)
+- Secure and system-integrated approach
+- Easy toggle through menu bar options
 
 ## System Requirements
 
@@ -42,6 +49,22 @@ A macOS menu bar application that provides real-time text translation and voice 
 3. Build and run the project
 
 ## Setup
+
+### Auto-Launch Configuration
+
+The app can automatically start when you log in to macOS for convenience:
+
+1. **Launch the app** - it will appear as a globe icon (🌐) in your menu bar
+2. **Click the globe icon** to open the menu
+3. **Toggle "ログイン時に自動起動"** - a checkmark (✓) indicates it's enabled
+4. **No restart required** - the setting takes effect immediately
+
+**Technical Details:**
+- ✅ Uses Apple's modern Service Management framework (SMAppService)
+- ✅ Secure system-level integration
+- ✅ Follows macOS best practices for login items
+- ✅ Easy to enable/disable through menu interface
+- ✅ No additional permissions required
 
 ### API Key Configuration
 
@@ -107,6 +130,7 @@ Click the globe icon (🌐) in your menu bar to access:
 - **Test Translation**: Test the translation feature
 - **Test Recording**: Test the recording feature
 - **API Key Settings**: Configure your OpenAI API key securely
+- **ログイン時に自動起動**: Toggle auto-launch at login (ON/OFF with checkmark)
 - **Quit**: Exit the application
 
 ## Keyboard Shortcuts
@@ -157,12 +181,14 @@ LLMTextTranslator/
 
 ### Key Components
 
-- **AppDelegate.swift**: Contains all the main functionality including API calls, recording, and UI management
+- **AppDelegate.swift**: Contains all the main functionality including API calls, recording, UI management, and auto-launch logic
+- **LaunchAtLoginManager.swift**: Handles auto-launch at login using SMAppService framework
 - **KeychainHelper.swift**: Secure API key storage and retrieval using macOS Keychain
 - **Menu Bar Integration**: Uses `NSStatusItem` for menu bar presence
 - **Global Shortcuts**: Implemented using `NSEvent.addGlobalMonitorForEvents`
 - **API Integration**: Direct HTTP calls to OpenAI's APIs
 - **Permissions**: Handles accessibility and microphone permissions
+- **Auto-Launch**: Modern SMAppService implementation for login items
 
 ### Building from Source
 
@@ -202,6 +228,7 @@ LLM Text Translatorは、OpenAIのGPTとWhisper APIを使用して、リアル�
 - **テキスト翻訳**: 選択したテキストを英語と日本語間で自動翻訳
 - **音声録音・文字起こし**: 音声をテキストに変換（フィラー音除去機能付き）
 - **メニューバー統合**: 軽量で使いやすいメニューバーアプリ
+- **ログイン時自動起動**: macOSログイン時にアプリを自動起動する機能
 
 ### キーボードショートカット
 - `⌘ + ⌥ + ⇧ + T`: 選択したテキストを翻訳

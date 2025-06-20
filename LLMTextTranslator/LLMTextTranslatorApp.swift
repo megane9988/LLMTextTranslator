@@ -12,7 +12,7 @@ struct LLMTextTranslatorApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
 
     var body: some Scene {
-        // ウィンドウ不要の場合は empty にしてしまってOK
+        // メニューバーアプリなのでウィンドウは不要
         Settings {
             EmptyView()
         }
