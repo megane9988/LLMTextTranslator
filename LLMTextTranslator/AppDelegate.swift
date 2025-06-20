@@ -1,5 +1,6 @@
 import Cocoa
 import AVFoundation
+import ServiceManagement
 
 class AppDelegate: NSObject, NSApplicationDelegate {
     var statusItem: NSStatusItem!
@@ -7,6 +8,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var audioRecorder: AVAudioRecorder?
     var isRecording = false
     var recordingURL: URL?
+    var launchAtLoginManager = LaunchAtLoginManager.shared
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         print("App launched")
@@ -96,10 +98,19 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         
         // メニューバーアイテムにメニューを追加
         let menu = NSMenu()
-        let quitItem = NSMenuItem(title: "Quit", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         let testItem = NSMenuItem(title: "Test Translation", action: #selector(testTranslation), keyEquivalent: "")
         let testRecordingItem = NSMenuItem(title: "Test Recording", action: #selector(testRecording), keyEquivalent: "")
         let settingsItem = NSMenuItem(title: "API Key Settings", action: #selector(showAPIKeySettings), keyEquivalent: "")
+        
+        // 自動起動設定項目を追加
+        let launchAtLoginItem = NSMenuItem(title: "ログイン時に自動起動", action: #selector(toggleLaunchAtLogin), keyEquivalent: "")
+        launchAtLoginItem.target = self
+        // 現在の状態に応じてチェックマークを設定
+        Task { @MainActor in
+            launchAtLoginItem.state = launchAtLoginManager.isEnabled ? .on : .off
+        }
+        
+        let quitItem = NSMenuItem(title: "Quit", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         
         testItem.target = self
         testRecordingItem.target = self
@@ -109,6 +120,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(testRecordingItem)
         menu.addItem(NSMenuItem.separator())
         menu.addItem(settingsItem)
+        menu.addItem(launchAtLoginItem)
         menu.addItem(NSMenuItem.separator())
         menu.addItem(quitItem)
         statusItem.menu = menu
@@ -545,6 +557,24 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 8.0) {
             window.orderOut(nil)
+        }
+    }
+    
+    @objc func toggleLaunchAtLogin() {
+        Task { @MainActor in
+            launchAtLoginManager.toggle()
+            
+            // メニュー項目の状態を更新
+            if let menu = statusItem.menu {
+                for item in menu.items {
+                    if item.title == "ログイン時に自動起動" {
+                        item.state = launchAtLoginManager.isEnabled ? .on : .off
+                        break
+                    }
+                }
+            }
+            
+            print("自動起動設定を切り替えた: \(launchAtLoginManager.isEnabled)")
         }
     }
 }
