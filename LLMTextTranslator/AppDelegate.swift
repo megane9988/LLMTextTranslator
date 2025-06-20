@@ -12,7 +12,9 @@ class KeychainManager {
     
     // APIキーを保存
     func saveAPIKey(_ apiKey: String) -> Bool {
-        let data = apiKey.data(using: .utf8)!
+        guard let data = apiKey.data(using: .utf8) else {
+            return false
+        }
         
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
@@ -168,7 +170,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let response = alert.runModal()
         if response == .alertFirstButtonReturn {
             let apiKey = textField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
-            if !apiKey.isEmpty {
+            if !apiKey.isEmpty && apiKey.hasPrefix("sk-") {
                 if KeychainManager.shared.saveAPIKey(apiKey) {
                     print("APIキーがKeychainに保存されました")
                     continueSetup()
@@ -177,8 +179,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                     showAPIKeySaveError()
                 }
             } else {
-                print("APIキーが入力されませんでした")
-                showAPIKeyRequiredAlert()
+                print("無効なAPIキーが入力されました")
+                showInvalidAPIKeyAlert()
             }
         } else {
             print("APIキー設定がキャンセルされました")
@@ -206,6 +208,22 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let alert = NSAlert()
         alert.messageText = "APIキーが必要"
         alert.informativeText = "アプリを使用するにはAPIキーの入力が必要です。"
+        alert.alertStyle = .warning
+        alert.addButton(withTitle: "再入力")
+        alert.addButton(withTitle: "終了")
+        
+        let response = alert.runModal()
+        if response == .alertFirstButtonReturn {
+            promptForAPIKey()
+        } else {
+            NSApplication.shared.terminate(nil)
+        }
+    }
+    
+    func showInvalidAPIKeyAlert() {
+        let alert = NSAlert()
+        alert.messageText = "無効なAPIキー"
+        alert.informativeText = "正しいOpenAI APIキー（sk-で始まる）を入力してください。"
         alert.alertStyle = .warning
         alert.addButton(withTitle: "再入力")
         alert.addButton(withTitle: "終了")
