@@ -1,5 +1,68 @@
 import Cocoa
 import AVFoundation
+import Security
+
+// Keychain管理クラス
+class KeychainManager {
+    static let shared = KeychainManager()
+    private let service = "LLMTextTranslator"
+    private let account = "OpenAI-APIKey"
+    
+    private init() {}
+    
+    // APIキーを保存
+    func saveAPIKey(_ apiKey: String) -> Bool {
+        let data = apiKey.data(using: .utf8)!
+        
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: service,
+            kSecAttrAccount as String: account,
+            kSecValueData as String: data
+        ]
+        
+        // 既存のアイテムを削除
+        SecItemDelete(query as CFDictionary)
+        
+        // 新しいアイテムを追加
+        let status = SecItemAdd(query as CFDictionary, nil)
+        return status == errSecSuccess
+    }
+    
+    // APIキーを取得
+    func getAPIKey() -> String? {
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: service,
+            kSecAttrAccount as String: account,
+            kSecReturnData as String: true,
+            kSecMatchLimit as String: kSecMatchLimitOne
+        ]
+        
+        var dataTypeRef: AnyObject?
+        let status = SecItemCopyMatching(query as CFDictionary, &dataTypeRef)
+        
+        if status == errSecSuccess,
+           let data = dataTypeRef as? Data,
+           let apiKey = String(data: data, encoding: .utf8) {
+            return apiKey
+        }
+        
+        return nil
+    }
+    
+    // APIキーを削除
+    func deleteAPIKey() -> Bool {
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: service,
+            kSecAttrAccount as String: account
+        ]
+        
+        let status = SecItemDelete(query as CFDictionary)
+        return status == errSecSuccess || status == errSecItemNotFound
+    }
+}
 
 class AppDelegate: NSObject, NSApplicationDelegate {
     var statusItem: NSStatusItem!
@@ -79,6 +142,83 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     func setupApp() {
         print("アプリのセットアップを開始")
         
+        // APIキーの確認
+        if KeychainManager.shared.getAPIKey() == nil {
+            print("APIキーが設定されていません")
+            promptForAPIKey()
+            return
+        }
+        
+        continueSetup()
+    }
+    
+    func promptForAPIKey() {
+        let alert = NSAlert()
+        alert.messageText = "OpenAI APIキーの設定"
+        alert.informativeText = "アプリを使用するにはOpenAI APIキーが必要です。APIキーを入力してください。"
+        alert.alertStyle = .informational
+        alert.addButton(withTitle: "設定")
+        alert.addButton(withTitle: "キャンセル")
+        
+        let textField = NSTextField(frame: NSRect(x: 0, y: 0, width: 300, height: 24))
+        textField.placeholderString = "sk-proj-..."
+        textField.isSecureTextEntry = true
+        alert.accessoryView = textField
+        
+        let response = alert.runModal()
+        if response == .alertFirstButtonReturn {
+            let apiKey = textField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !apiKey.isEmpty {
+                if KeychainManager.shared.saveAPIKey(apiKey) {
+                    print("APIキーがKeychainに保存されました")
+                    continueSetup()
+                } else {
+                    print("APIキーの保存に失敗しました")
+                    showAPIKeySaveError()
+                }
+            } else {
+                print("APIキーが入力されませんでした")
+                showAPIKeyRequiredAlert()
+            }
+        } else {
+            print("APIキー設定がキャンセルされました")
+            NSApplication.shared.terminate(nil)
+        }
+    }
+    
+    func showAPIKeySaveError() {
+        let alert = NSAlert()
+        alert.messageText = "エラー"
+        alert.informativeText = "APIキーの保存に失敗しました。再試行してください。"
+        alert.alertStyle = .warning
+        alert.addButton(withTitle: "再試行")
+        alert.addButton(withTitle: "終了")
+        
+        let response = alert.runModal()
+        if response == .alertFirstButtonReturn {
+            promptForAPIKey()
+        } else {
+            NSApplication.shared.terminate(nil)
+        }
+    }
+    
+    func showAPIKeyRequiredAlert() {
+        let alert = NSAlert()
+        alert.messageText = "APIキーが必要"
+        alert.informativeText = "アプリを使用するにはAPIキーの入力が必要です。"
+        alert.alertStyle = .warning
+        alert.addButton(withTitle: "再入力")
+        alert.addButton(withTitle: "終了")
+        
+        let response = alert.runModal()
+        if response == .alertFirstButtonReturn {
+            promptForAPIKey()
+        } else {
+            NSApplication.shared.terminate(nil)
+        }
+    }
+    
+    func continueSetup() {
         // 既存のstatusItemがあれば削除
         if statusItem != nil {
             NSStatusBar.system.removeStatusItem(statusItem)
@@ -99,11 +239,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let quitItem = NSMenuItem(title: "Quit", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         let testItem = NSMenuItem(title: "Test Translation", action: #selector(testTranslation), keyEquivalent: "")
         let testRecordingItem = NSMenuItem(title: "Test Recording", action: #selector(testRecording), keyEquivalent: "")
+        let settingsItem = NSMenuItem(title: "API Key Settings", action: #selector(showAPIKeySettings), keyEquivalent: "")
         testItem.target = self
         testRecordingItem.target = self
+        settingsItem.target = self
         
         menu.addItem(testItem)
         menu.addItem(testRecordingItem)
+        menu.addItem(NSMenuItem.separator())
+        menu.addItem(settingsItem)
         menu.addItem(NSMenuItem.separator())
         menu.addItem(quitItem)
         statusItem.menu = menu
@@ -133,6 +277,31 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         
         print("グローバルキーボード監視を開始した")
         print("アプリのセットアップ完了")
+    }
+    
+    @objc func showAPIKeySettings() {
+        let alert = NSAlert()
+        alert.messageText = "API Key Settings"
+        alert.informativeText = "現在のAPIキーを変更または削除できます。"
+        alert.alertStyle = .informational
+        alert.addButton(withTitle: "変更")
+        alert.addButton(withTitle: "削除")
+        alert.addButton(withTitle: "キャンセル")
+        
+        let response = alert.runModal()
+        if response == .alertFirstButtonReturn {
+            // APIキー変更
+            promptForAPIKey()
+        } else if response == .alertSecondButtonReturn {
+            // APIキー削除
+            if KeychainManager.shared.deleteAPIKey() {
+                let deleteAlert = NSAlert()
+                deleteAlert.messageText = "削除完了"
+                deleteAlert.informativeText = "APIキーが削除されました。アプリを再起動してください。"
+                deleteAlert.runModal()
+                NSApplication.shared.terminate(nil)
+            }
+        }
     }
     
     func requestMicrophonePermission() {
@@ -213,8 +382,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     func callOpenAI(text: String) {
         print("OpenAI API を呼び出し中...")
         
-        // 環境変数または設定からAPIキーを取得（後で修正）
-        let apiKey = "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"
+        // KeychainからAPIキーを取得
+        guard let apiKey = KeychainManager.shared.getAPIKey() else {
+            print("APIキーが取得できません")
+            DispatchQueue.main.async {
+                self.showPopup(text: "APIキーが設定されていません")
+            }
+            return
+        }
         
         guard let url = URL(string: "https://api.openai.com/v1/chat/completions") else {
             print("URL作成に失敗")
@@ -348,7 +523,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     func transcribeAudio(audioURL: URL) {
         print("Whisper API で文字起こし中...")
         
-        let apiKey = "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"
+        // KeychainからAPIキーを取得
+        guard let apiKey = KeychainManager.shared.getAPIKey() else {
+            print("APIキーが取得できません")
+            DispatchQueue.main.async {
+                self.showPopup(text: "APIキーが設定されていません")
+            }
+            return
+        }
         
         guard let url = URL(string: "https://api.openai.com/v1/audio/transcriptions") else {
             print("URL作成に失敗")

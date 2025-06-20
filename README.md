@@ -47,16 +47,17 @@ A macOS menu bar application that provides real-time text translation and voice 
 
 ⚠️ **Important**: You need to configure your OpenAI API key before using the app.
 
-Currently, the API key is hardcoded in the source code. For security reasons, you should:
+**New Secure Method**: The app now uses macOS Keychain to securely store your API key.
 
-1. Open `LLMTextTranslator/AppDelegate.swift`
-2. Replace the hardcoded API key in both `callOpenAI` and `transcribeAudio` functions with your own key
-3. Consider using environment variables or a secure configuration file instead
+1. Launch the app
+2. On first startup, you'll be prompted to enter your OpenAI API key
+3. The API key will be securely stored in macOS Keychain
+4. You can change or delete the API key from the menu bar app menu
 
-**Recommended**: Store your API key in an environment variable:
-```swift
-let apiKey = ProcessInfo.processInfo.environment["OPENAI_API_KEY"] ?? ""
-```
+**Benefits of Keychain Storage**:
+- Secure storage using macOS security infrastructure
+- No hardcoded keys in source code
+- Easy management through the app interface
 
 ### Permissions
 
@@ -164,7 +165,7 @@ LLMTextTranslator/
 
 - The app requires accessibility permissions to monitor global keystrokes
 - Microphone access is needed for voice recording
-- API keys should be stored securely, not hardcoded
+- API keys are now stored securely in macOS Keychain (no longer hardcoded)
 - The app runs as a background menu bar application
 
 ## License
@@ -201,7 +202,8 @@ LLM Text Translatorは、OpenAIのGPTとWhisper APIを使用して、リアル�
 
 ### セットアップ
 1. OpenAI APIキーを取得
-2. `AppDelegate.swift`内のAPIキーを自分のキーに置き換え
-3. アプリをビルドして実行
+2. アプリを起動
+3. 初回起動時にAPIキーの入力を求められるので、取得したAPIキーを入力
+4. APIキーはmacOSのKeychainに安全に保存されます
 
 詳細については上記の英語版ドキュメントをご参照ください。
