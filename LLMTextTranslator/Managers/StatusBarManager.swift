@@ -16,11 +16,15 @@ class StatusBarManager {
     enum IconState {
         case normal
         case recording
+        case translating
+        case transcribing
         
         var title: String {
             switch self {
             case .normal: return "🌐"
             case .recording: return "🔴"
+            case .translating: return "⏳"
+            case .transcribing: return "🎙️"
             }
         }
     }

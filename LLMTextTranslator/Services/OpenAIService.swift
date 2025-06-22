@@ -4,6 +4,8 @@ protocol OpenAIServiceDelegate: AnyObject {
     func openAIService(_ service: OpenAIService, didReceiveTranslation translation: String)
     func openAIService(_ service: OpenAIService, didReceiveTranscription transcription: String)
     func openAIService(_ service: OpenAIService, didFailWithError error: String)
+    func openAIService(_ service: OpenAIService, didStartTranslation: Void)
+    func openAIService(_ service: OpenAIService, didStartTranscription: Void)
 }
 
 class OpenAIService {
@@ -14,6 +16,9 @@ class OpenAIService {
     // MARK: - 翻訳機能
     func translateText(_ text: String) {
         print("OpenAI API を呼び出し中...")
+        
+        // 開始を通知
+        delegate?.openAIService(self, didStartTranslation: ())
         
         guard let apiKey = KeychainHelper.shared.getAPIKey() else {
             print("APIキーが設定されていない")
@@ -102,6 +107,9 @@ class OpenAIService {
     // MARK: - 音声文字起こし機能
     func transcribeAudio(from audioURL: URL) {
         print("Whisper API で文字起こし中...")
+        
+        // 開始を通知
+        delegate?.openAIService(self, didStartTranscription: ())
         
         guard let apiKey = KeychainHelper.shared.getAPIKey() else {
             print("APIキーが設定されていない")
