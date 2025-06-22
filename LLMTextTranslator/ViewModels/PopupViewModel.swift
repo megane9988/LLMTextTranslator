@@ -6,6 +6,8 @@ class PopupViewModel: ObservableObject {
     @Published var isVisible = false
     @Published var currentText = ""
     @Published var currentTitle = "Translation Result"
+    @Published var isTranslating = false // 翻訳実行状態
+    @Published var isTranscribing = false // 文字起こし実行状態
     
     // 設定
     @Published var autoCloseDelay: TimeInterval = 8.0
@@ -68,6 +70,48 @@ class PopupViewModel: ObservableObject {
     func setAutoCloseDelay(_ delay: TimeInterval) {
         autoCloseDelay = delay
         print("PopupViewModel: 自動クローズ時間を更新: \(delay)秒")
+    }
+    
+    // MARK: - 実行状態管理
+    func setTranslatingState(_ translating: Bool) {
+        isTranslating = translating
+        if translating {
+            showProcessingPopup(type: .translation)
+        }
+        print("PopupViewModel: 翻訳状態を更新 - \(translating)")
+    }
+    
+    func setTranscribingState(_ transcribing: Bool) {
+        isTranscribing = transcribing
+        if transcribing {
+            showProcessingPopup(type: .transcription)
+        }
+        print("PopupViewModel: 文字起こし状態を更新 - \(transcribing)")
+    }
+    
+    private enum ProcessingType {
+        case translation
+        case transcription
+        
+        var message: String {
+            switch self {
+            case .translation: return "翻訳中..."
+            case .transcription: return "音声を文字起こし中..."
+            }
+        }
+        
+        var icon: String {
+            switch self {
+            case .translation: return "🔄"
+            case .transcription: return "🎙️"
+            }
+        }
+    }
+    
+    private func showProcessingPopup(type: ProcessingType) {
+        showPopup(text: "\(type.icon) \(type.message)", title: "処理中")
+        // 処理中は自動クローズを無効化
+        cancelAutoClose()
     }
     
     // MARK: - ユーティリティ

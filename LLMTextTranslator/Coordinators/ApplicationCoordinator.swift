@@ -171,15 +171,33 @@ class ApplicationCoordinator: ObservableObject {
 
 // MARK: - Service Delegates
 extension ApplicationCoordinator: OpenAIServiceDelegate {
+    func openAIService(_ service: OpenAIService, didStartTranslation: Void) {
+        popupViewModel.setTranslatingState(true)
+        statusBarManager.setIconState(.translating)
+    }
+    
+    func openAIService(_ service: OpenAIService, didStartTranscription: Void) {
+        popupViewModel.setTranscribingState(true)
+        statusBarManager.setIconState(.transcribing)
+    }
+    
     func openAIService(_ service: OpenAIService, didReceiveTranslation translation: String) {
+        popupViewModel.setTranslatingState(false)
+        statusBarManager.setIconState(.normal)
         popupViewModel.showPopup(text: translation)
     }
     
     func openAIService(_ service: OpenAIService, didReceiveTranscription transcription: String) {
+        popupViewModel.setTranscribingState(false)
+        statusBarManager.setIconState(.normal)
         popupViewModel.showPopup(text: transcription)
     }
     
     func openAIService(_ service: OpenAIService, didFailWithError error: String) {
+        // エラー時は両方の状態をリセット
+        popupViewModel.setTranslatingState(false)
+        popupViewModel.setTranscribingState(false)
+        statusBarManager.setIconState(.normal)
         popupViewModel.showPopup(text: error)
     }
 }
