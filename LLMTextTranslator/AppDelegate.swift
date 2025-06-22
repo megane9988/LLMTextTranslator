@@ -4,78 +4,23 @@ import ServiceManagement
 
 class AppDelegate: NSObject, NSApplicationDelegate {
     var statusItem: NSStatusItem!
-    var permissionTimer: Timer?
-    var audioRecorder: AVAudioRecorder?
-    var isRecording = false
-    var recordingURL: URL?
     var launchAtLoginManager = LaunchAtLoginManager.shared
+    
+    // サービス層
+    private let openAIService = OpenAIService()
+    private let recordingService = RecordingService()
+    private let permissionManager = PermissionManager.shared
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         print("App launched")
-        checkAccessibilityPermission()
-    }
-    
-    func checkAccessibilityPermission() {
-        // デバッグ情報を追加
-        let bundleID = Bundle.main.bundleIdentifier ?? "Unknown"
-        print("Bundle ID: \(bundleID)")
         
-        let trusted = AXIsProcessTrusted()
-        print("アクセシビリティ権限状態: \(trusted)")
+        // デリゲート設定
+        openAIService.delegate = self
+        recordingService.delegate = self
+        permissionManager.delegate = self
         
-        if !trusted {
-            print("アクセシビリティ権限が必要だ")
-            
-            // 最初にプロンプトありで権限要求
-            let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue(): true]
-            let promptResult = AXIsProcessTrustedWithOptions(options as CFDictionary)
-            print("プロンプト後の権限状態: \(promptResult)")
-            
-            if promptResult {
-                // 即座に許可された場合
-                print("権限が即座に許可された")
-                setupApp()
-                return
-            }
-            
-            // アラートは一度だけ表示
-            let alert = NSAlert()
-            alert.messageText = "アクセシビリティ権限が必要"
-            alert.informativeText = "システム環境設定でアプリを許可した後、アプリを再起動してください"
-            alert.addButton(withTitle: "OK")
-            alert.addButton(withTitle: "設定を開く")
-            
-            let response = alert.runModal()
-            if response == .alertSecondButtonReturn {
-                // システム環境設定を開く
-                NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")!)
-            }
-            
-            // タイマーでチェック（回数制限付き）
-            var checkCount = 0
-            permissionTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { timer in
-                checkCount += 1
-                print("権限チェック中... (\(checkCount)/30)")
-                
-                if AXIsProcessTrusted() {
-                    print("アクセシビリティ権限が許可された！")
-                    timer.invalidate()
-                    self.permissionTimer = nil
-                    DispatchQueue.main.async {
-                        self.setupApp()
-                    }
-                } else if checkCount >= 30 {
-                    // 30秒後にタイマーを停止
-                    print("権限チェックタイムアウト。アプリを再起動してください。")
-                    timer.invalidate()
-                    self.permissionTimer = nil
-                }
-            }
-            return
-        }
-        
-        print("アクセシビリティ権限は既に許可されている")
-        setupApp()
+        // 権限チェック開始
+        permissionManager.checkAccessibilityPermission()
     }
     
     func setupApp() {
@@ -128,7 +73,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         print("メニューを設定した")
         
         // 音声録音権限をリクエスト
-        requestMicrophonePermission()
+        permissionManager.checkMicrophonePermission()
 
         NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { [weak self] event in
             print("キーイベント検出: keyCode=\(event.keyCode), modifiers=\(event.modifierFlags)")
@@ -150,45 +95,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         
         print("グローバルキーボード監視を開始した")
         print("アプリのセットアップ完了")
-    }
-    
-    func requestMicrophonePermission() {
-        // macOSでのマイクロフォン権限チェック
-        if #available(macOS 10.14, *) {
-            switch AVCaptureDevice.authorizationStatus(for: .audio) {
-            case .authorized:
-                print("マイクロフォン権限は既に許可済み")
-            case .denied, .restricted:
-                print("マイクロフォン権限が拒否されている")
-                showPermissionAlert()
-            case .notDetermined:
-                AVCaptureDevice.requestAccess(for: .audio) { granted in
-                    DispatchQueue.main.async {
-                        if granted {
-                            print("マイクロフォン権限が許可された")
-                        } else {
-                            print("マイクロフォン権限が拒否された")
-                            self.showPermissionAlert()
-                        }
-                    }
-                }
-            @unknown default:
-                print("不明なマイクロフォン権限状態")
-            }
-        }
-    }
-    
-    func showPermissionAlert() {
-        let alert = NSAlert()
-        alert.messageText = "マイクロフォン権限が必要"
-        alert.informativeText = "音声録音機能を使用するにはマイクロフォンへのアクセスを許可してください"
-        alert.addButton(withTitle: "OK")
-        alert.addButton(withTitle: "設定を開く")
-        
-        let response = alert.runModal()
-        if response == .alertSecondButtonReturn {
-            NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone")!)
-        }
     }
     
     @objc func showAPIKeySettings() {
@@ -231,7 +137,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc func testRecording() {
         print("テスト録音を実行")
-        toggleRecording()
+        recordingService.toggleRecording()
+    }
+    
+    func toggleRecording() {
+        recordingService.toggleRecording()
     }
 
     func translateSelectedText() {
@@ -252,255 +162,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             let pb = NSPasteboard.general
             if let copied = pb.string(forType: .string), !copied.isEmpty {
                 print("コピーしたテキスト: \(copied)")
-                self.callOpenAI(text: copied)
+                self.openAIService.translateText(copied)
             } else {
                 print("クリップボードが空だ")
                 self.showPopup(text: "テキストが選択されていない")
             }
         }
-    }
-
-    func callOpenAI(text: String) {
-        print("OpenAI API を呼び出し中...")
-        
-        // KeychainからAPIキーを取得
-        guard let apiKey = KeychainHelper.shared.getAPIKey() else {
-            print("APIキーが設定されていない")
-            showPopup(text: "APIキーが設定されていません。アプリのメニューから設定してください。")
-            return
-        }
-        
-        guard let url = URL(string: "https://api.openai.com/v1/chat/completions") else {
-            print("URL作成に失敗")
-            return
-        }
-        
-        var req = URLRequest(url: url)
-        req.httpMethod = "POST"
-        req.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
-        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
-
-        let prompt = "Translate the following text between English and Japanese depending on its original language:\n\(text)"
-        let json: [String: Any] = [
-            "model": "gpt-3.5-turbo",
-            "messages": [
-                ["role": "system", "content": "You are a translator."],
-                ["role": "user", "content": prompt]
-            ],
-            "temperature": 0
-        ]
-
-        do {
-            req.httpBody = try JSONSerialization.data(withJSONObject: json)
-        } catch {
-            print("JSON作成エラー: \(error)")
-            return
-        }
-
-        URLSession.shared.dataTask(with: req) { data, response, error in
-            if let error = error {
-                print("ネットワークエラー: \(error)")
-                DispatchQueue.main.async {
-                    self.showPopup(text: "ネットワークエラー")
-                }
-                return
-            }
-            
-            if let httpResponse = response as? HTTPURLResponse {
-                print("HTTPステータス: \(httpResponse.statusCode)")
-            }
-            
-            guard let data = data else {
-                print("データがない")
-                return
-            }
-            
-            do {
-                if let result = try JSONSerialization.jsonObject(with: data) as? [String: Any] {
-                    print("APIレスポンス: \(result)")
-                    
-                    if let choices = result["choices"] as? [[String: Any]],
-                       let message = choices.first?["message"] as? [String: Any],
-                       let content = message["content"] as? String {
-                        DispatchQueue.main.async {
-                            self.showPopup(text: content.trimmingCharacters(in: .whitespacesAndNewlines))
-                        }
-                    } else if let error = result["error"] as? [String: Any] {
-                        print("API エラー: \(error)")
-                        DispatchQueue.main.async {
-                            self.showPopup(text: "API エラー")
-                        }
-                    }
-                }
-            } catch {
-                print("JSON解析エラー: \(error)")
-            }
-        }.resume()
-    }
-
-    func toggleRecording() {
-        if isRecording {
-            stopRecording()
-        } else {
-            startRecording()
-        }
-    }
-    
-    func startRecording() {
-        print("録音開始")
-        
-        // 一時ファイルのURL
-        let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-        recordingURL = documentsPath.appendingPathComponent("recording_\(Date().timeIntervalSince1970).m4a")
-        
-        // 録音設定（macOS用）
-        let settings: [String: Any] = [
-            AVFormatIDKey: Int(kAudioFormatMPEG4AAC),
-            AVSampleRateKey: 44100.0,
-            AVNumberOfChannelsKey: 1,
-            AVEncoderAudioQualityKey: AVAudioQuality.high.rawValue
-        ]
-        
-        do {
-            audioRecorder = try AVAudioRecorder(url: recordingURL!, settings: settings)
-            audioRecorder?.record()
-            isRecording = true
-            
-            // ステータスバーのアイコンを変更
-            statusItem.button?.title = "🔴"
-            print("録音中...")
-            
-            showPopup(text: "録音中... ⌘ + ⌥ + ⇧ + R で停止")
-            
-        } catch {
-            print("録音開始エラー: \(error)")
-        }
-    }
-    
-    func stopRecording() {
-        print("録音停止")
-        
-        audioRecorder?.stop()
-        isRecording = false
-        
-        // ステータスバーのアイコンを元に戻す
-        statusItem.button?.title = "🌐"
-        
-        if let url = recordingURL {
-            print("録音ファイル: \(url.path)")
-            convertToMP3AndTranscribe(audioURL: url)
-        }
-    }
-    
-    func convertToMP3AndTranscribe(audioURL: URL) {
-        print("音声ファイルを処理中...")
-        
-        // M4AファイルをそのままWhisperに送信（MP3変換は省略してシンプルに）
-        transcribeAudio(audioURL: audioURL)
-    }
-    
-    func transcribeAudio(audioURL: URL) {
-        print("Whisper API で文字起こし中...")
-        
-        // KeychainからAPIキーを取得
-        guard let apiKey = KeychainHelper.shared.getAPIKey() else {
-            print("APIキーが設定されていない")
-            showPopup(text: "APIキーが設定されていません。")
-            return
-        }
-        
-        guard let url = URL(string: "https://api.openai.com/v1/audio/transcriptions") else {
-            print("URL作成に失敗")
-            return
-        }
-        
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
-        
-        let boundary = UUID().uuidString
-        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
-        
-        var data = Data()
-        
-        // モデルパラメータ
-        data.append("--\(boundary)\r\n".data(using: .utf8)!)
-        data.append("Content-Disposition: form-data; name=\"model\"\r\n\r\n".data(using: .utf8)!)
-        data.append("whisper-1\r\n".data(using: .utf8)!)
-        
-        // 言語パラメータ（日本語と英語を自動認識）
-        data.append("--\(boundary)\r\n".data(using: .utf8)!)
-        data.append("Content-Disposition: form-data; name=\"language\"\r\n\r\n".data(using: .utf8)!)
-        data.append("ja\r\n".data(using: .utf8)!)
-        
-        // プロンプトパラメータを追加（フィラー音除去指示）
-        data.append("--\(boundary)\r\n".data(using: .utf8)!)
-        data.append("Content-Disposition: form-data; name=\"prompt\"\r\n\r\n".data(using: .utf8)!)
-        data.append("Remove filler sounds and meaningless interjections, and convert it into clear and easy-to-read text.".data(using: .utf8)!)
-        data.append("\r\n".data(using: .utf8)!)
-        
-        // ファイルデータ
-        do {
-            let audioData = try Data(contentsOf: audioURL)
-            data.append("--\(boundary)\r\n".data(using: .utf8)!)
-            data.append("Content-Disposition: form-data; name=\"file\"; filename=\"audio.m4a\"\r\n".data(using: .utf8)!)
-            data.append("Content-Type: audio/mp4\r\n\r\n".data(using: .utf8)!)
-            data.append(audioData)
-            data.append("\r\n".data(using: .utf8)!)
-        } catch {
-            print("音声ファイル読み込みエラー: \(error)")
-            return
-        }
-        
-        data.append("--\(boundary)--\r\n".data(using: .utf8)!)
-        request.httpBody = data
-        
-        URLSession.shared.dataTask(with: request) { data, response, error in
-            if let error = error {
-                print("ネットワークエラー: \(error)")
-                DispatchQueue.main.async {
-                    self.showPopup(text: "ネットワークエラー")
-                }
-                return
-            }
-            
-            if let httpResponse = response as? HTTPURLResponse {
-                print("HTTPステータス: \(httpResponse.statusCode)")
-            }
-            
-            guard let data = data else {
-                print("データがない")
-                return
-            }
-            
-            do {
-                if let result = try JSONSerialization.jsonObject(with: data) as? [String: Any] {
-                    print("Whisper APIレスポンス: \(result)")
-                    
-                    if let text = result["text"] as? String {
-                        DispatchQueue.main.async {
-                            self.showPopup(text: "文字起こし結果:\n\n\(text)")
-                        }
-                    } else if let error = result["error"] as? [String: Any] {
-                        print("Whisper API エラー: \(error)")
-                        DispatchQueue.main.async {
-                            self.showPopup(text: "文字起こしエラー")
-                        }
-                    }
-                }
-            } catch {
-                print("JSON解析エラー: \(error)")
-                if let responseString = String(data: data, encoding: .utf8) {
-                    print("レスポンス内容: \(responseString)")
-                }
-            }
-            
-            // 一時ファイルを削除
-            DispatchQueue.main.async {
-                try? FileManager.default.removeItem(at: audioURL)
-            }
-            
-        }.resume()
     }
 
     func showPopup(text: String) {
@@ -575,6 +242,59 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             }
             
             print("自動起動設定を切り替えた: \(launchAtLoginManager.isEnabled)")
+        }
+    }
+}
+
+// MARK: - OpenAIServiceDelegate
+extension AppDelegate: OpenAIServiceDelegate {
+    func openAIService(_ service: OpenAIService, didReceiveTranslation translation: String) {
+        showPopup(text: translation)
+    }
+    
+    func openAIService(_ service: OpenAIService, didReceiveTranscription transcription: String) {
+        showPopup(text: transcription)
+    }
+    
+    func openAIService(_ service: OpenAIService, didFailWithError error: String) {
+        showPopup(text: error)
+    }
+}
+
+// MARK: - RecordingServiceDelegate
+extension AppDelegate: RecordingServiceDelegate {
+    func recordingService(_ service: RecordingService, didStartRecording: Bool) {
+        // ステータスバーのアイコンを変更
+        statusItem.button?.title = "🔴"
+        showPopup(text: "録音中... ⌘ + ⌥ + ⇧ + R で停止")
+    }
+    
+    func recordingService(_ service: RecordingService, didStopRecording audioURL: URL?) {
+        // ステータスバーのアイコンを元に戻す
+        statusItem.button?.title = "🌐"
+        
+        if let url = audioURL {
+            print("録音ファイル: \(url.path)")
+            openAIService.transcribeAudio(from: url)
+        }
+    }
+    
+    func recordingService(_ service: RecordingService, didFailWithError error: String) {
+        showPopup(text: error)
+    }
+}
+
+// MARK: - PermissionManagerDelegate
+extension AppDelegate: PermissionManagerDelegate {
+    func permissionManager(_ manager: PermissionManager, accessibilityPermissionGranted: Bool) {
+        if accessibilityPermissionGranted {
+            setupApp()
+        }
+    }
+    
+    func permissionManager(_ manager: PermissionManager, microphonePermissionGranted: Bool) {
+        if microphonePermissionGranted {
+            print("マイクロフォン権限が許可された")
         }
     }
 }
