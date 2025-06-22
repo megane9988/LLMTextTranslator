@@ -36,7 +36,7 @@ class PopupWindow {
         scheduleAutoClose()
         
         // デバッグ用
-        print("ポップアップウィンドウを表示: \(text)")
+        print("ポップアップウィンドウを表示: \(text.prefix(50))...")
     }
     
     private func createWindow(text: String, title: String, screenFrame: NSRect) -> NSWindow {

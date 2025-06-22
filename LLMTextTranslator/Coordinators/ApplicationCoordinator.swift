@@ -5,6 +5,7 @@ import Combine
 class ApplicationCoordinator: ObservableObject {
     // ViewModels
     @Published var menuBarViewModel: MenuBarViewModel
+    @Published var popupViewModel: PopupViewModel
     
     // Services
     private let openAIService: OpenAIService
@@ -24,6 +25,7 @@ class ApplicationCoordinator: ObservableObject {
     init() {
         // ViewModels初期化
         self.menuBarViewModel = MenuBarViewModel()
+        self.popupViewModel = PopupViewModel()
         
         // Services初期化
         self.openAIService = OpenAIService()
@@ -66,6 +68,20 @@ class ApplicationCoordinator: ObservableObject {
         menuBarViewModel.$isLaunchAtLoginEnabled
             .sink { [weak self] _ in
                 self?.statusBarManager.updateLaunchAtLoginState()
+            }
+            .store(in: &cancellables)
+        
+        // PopupViewModelの状態変化を監視
+        popupViewModel.$isVisible
+            .sink { [weak self] isVisible in
+                if isVisible {
+                    self?.popupWindow.showPopup(
+                        text: self?.popupViewModel.currentText ?? "",
+                        title: self?.popupViewModel.currentTitle ?? "Translation Result"
+                    )
+                } else {
+                    self?.popupWindow.closeCurrentWindow()
+                }
             }
             .store(in: &cancellables)
     }
@@ -113,7 +129,7 @@ class ApplicationCoordinator: ObservableObject {
     
     // MARK: - アクション処理
     func executeTestTranslation() {
-        popupWindow.showPopup(text: "テスト: アプリが正常に動作している")
+        popupViewModel.showPopup(text: "テスト: アプリが正常に動作している")
     }
     
     func executeTestRecording() {
@@ -156,21 +172,21 @@ class ApplicationCoordinator: ObservableObject {
 // MARK: - Service Delegates
 extension ApplicationCoordinator: OpenAIServiceDelegate {
     func openAIService(_ service: OpenAIService, didReceiveTranslation translation: String) {
-        popupWindow.showPopup(text: translation)
+        popupViewModel.showPopup(text: translation)
     }
     
     func openAIService(_ service: OpenAIService, didReceiveTranscription transcription: String) {
-        popupWindow.showPopup(text: transcription)
+        popupViewModel.showPopup(text: transcription)
     }
     
     func openAIService(_ service: OpenAIService, didFailWithError error: String) {
-        popupWindow.showPopup(text: error)
+        popupViewModel.showPopup(text: error)
     }
 }
 
 extension ApplicationCoordinator: RecordingServiceDelegate {
     func recordingService(_ service: RecordingService, didStartRecording: Bool) {
-        popupWindow.showPopup(text: "録音中... ⌘ + ⌥ + ⇧ + R で停止")
+        popupViewModel.showPopup(text: "録音中... ⌘ + ⌥ + ⇧ + R で停止")
     }
     
     func recordingService(_ service: RecordingService, didStopRecording audioURL: URL?) {
@@ -181,7 +197,7 @@ extension ApplicationCoordinator: RecordingServiceDelegate {
     }
     
     func recordingService(_ service: RecordingService, didFailWithError error: String) {
-        popupWindow.showPopup(text: error)
+        popupViewModel.showPopup(text: error)
         // 録音エラー時は状態をリセット
         menuBarViewModel.setRecordingState(false)
     }
@@ -230,7 +246,7 @@ extension ApplicationCoordinator: SettingsWindowDelegate {
     }
     
     func settingsWindow(_ window: SettingsWindow, didShowMessage message: String) {
-        popupWindow.showPopup(text: message)
+        popupViewModel.showPopup(text: message)
     }
 }
 
@@ -250,6 +266,6 @@ extension ApplicationCoordinator: ClipboardManagerDelegate {
     }
     
     func clipboardManager(_ manager: ClipboardManager, didFailToCopyText: Void) {
-        popupWindow.showPopup(text: "テキストが選択されていない")
+        popupViewModel.showPopup(text: "テキストが選択されていない")
     }
 }
