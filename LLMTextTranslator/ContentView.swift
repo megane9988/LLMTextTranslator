@@ -23,8 +23,8 @@ struct ContentView: View {
                     .font(.headline)
                 
                 Toggle("ログイン時に自動起動", isOn: $launchManager.isEnabled)
-                    .onChange(of: launchManager.isEnabled) { newValue in
-                        launchManager.setEnabled(newValue)
+                    .onChange(of: launchManager.isEnabled) {
+                        launchManager.setEnabled(launchManager.isEnabled)
                     }
             }
             .padding()
