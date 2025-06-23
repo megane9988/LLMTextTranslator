@@ -47,7 +47,52 @@ OpenAIのGPTとWhisper APIを使用したmacOS専用のメニューバーアプ�
 
 2. Xcodeで`LLMTextTranslator.xcodeproj`を開く
 
-3. プロジェクトをビルドして実行
+3. **署名設定（重要）**: このプロジェクトはアドホック署名用に設定されている
+   - Apple Developer アカウントは不要
+   - 自動的に"Sign to Run Locally"で署名される
+   - 他の環境でクローンした場合も追加設定不要
+
+4. プロジェクトをビルドして実行
+
+### 他の環境でのセットアップ
+
+このリポジトリを他のMacでクローンした場合：
+
+#### 自動設定（推奨）
+プロジェクトは既にアドホック署名用に設定済み：
+- `CODE_SIGN_IDENTITY = "-"` （アドホック署名）
+- `CODE_SIGN_STYLE = Manual`
+- `DEVELOPMENT_TEAM = ""` （開発チーム不要）
+
+**→ 追加の署名設定は不要。そのままビルド可能。**
+
+#### 署名トラブルが発生した場合
+稀に署名エラーが発生する場合は、Xcodeで以下を確認：
+
+1. **プロジェクト設定を開く**
+   - プロジェクトナビゲーターで最上位の`LLMTextTranslator`をクリック
+   - `LLMTextTranslator` ターゲットを選択
+
+2. **Signing & Capabilities タブ**
+   - "Automatically manage signing" のチェックを**外す**
+   - "Signing Certificate" を **"Sign to Run Locally"** に設定
+   - "Team" を **"None"** に設定
+
+3. **ビルド設定確認**
+   ```
+   Code Signing Identity: Sign to Run Locally
+   Code Signing Style: Manual
+   Development Team: (空白)
+   ```
+
+#### 配布用署名に変更する場合
+将来的にアプリを配布したい場合は：
+1. Apple Developer Program に登録（年額￥12,800）
+2. プロジェクト設定で開発者チームを選択
+3. "Automatically manage signing" を有効化
+4. 配布用の署名設定に変更
+
+**注意**: アドホック署名アプリは署名したMacでのみ動作する。他のMacで動かすには各環境でビルドが必要。
 
 ## セットアップ
 
@@ -152,6 +197,34 @@ OpenAIのGPTとWhisper APIを使用したmacOS専用のメニューバーアプ�
 | `⌘ + ⌥ + ⇧ + E` | 音声録音（文字起こし + 翻訳） |
 
 ## トラブルシューティング
+
+### 署名・ビルドエラー
+
+#### 「Signing for "LLMTextTranslator" requires a development team」エラー
+このエラーが表示された場合：
+
+1. **プロジェクト設定を確認**
+   - Xcodeでプロジェクト設定を開く
+   - "Signing & Capabilities" タブを選択
+   - "Automatically manage signing" のチェックを外す
+   - "Team" を "None" に設定
+
+2. **署名設定を手動で設定**
+   ```
+   Code Signing Identity: Sign to Run Locally
+   Code Signing Style: Manual  
+   Development Team: (空白)
+   ```
+
+3. **クリーンビルド実行**
+   - メニュー: Product → Clean Build Folder
+   - 再度ビルドを実行
+
+#### 「アクセシビリティ権限を何度も求められる」問題
+ビルドのたびに権限を求められる場合：
+- 署名が一貫していない可能性
+- 上記の署名設定を確認してアドホック署名が正しく設定されていることを確認
+- アドホック署名により権限設定が維持される
 
 ### 「アクセシビリティ権限が必要」メッセージ
 - システム環境設定 → セキュリティとプライバシー → プライバシー → アクセシビリティ
