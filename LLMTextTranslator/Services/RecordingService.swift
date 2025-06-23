@@ -1,5 +1,6 @@
 import Foundation
 import AVFoundation
+import AudioToolbox
 
 protocol RecordingServiceDelegate: AnyObject {
     func recordingService(_ service: RecordingService, didStartRecording: Bool)
@@ -13,6 +14,15 @@ class RecordingService: NSObject {
     private var audioRecorder: AVAudioRecorder?
     private var isRecording = false
     private var recordingURL: URL?
+    
+    // MARK: - 音声フィードバック
+    private func playStartSound() {
+        AudioServicesPlaySystemSound(1113) // Sound for start
+    }
+    
+    private func playStopSound() {
+        AudioServicesPlaySystemSound(1114) // Sound for stop
+    }
     
     var recordingState: Bool {
         return isRecording
@@ -45,6 +55,7 @@ class RecordingService: NSObject {
             audioRecorder?.record()
             isRecording = true
             
+            playStartSound() // 録音開始音
             print("録音中...")
             delegate?.recordingService(self, didStartRecording: true)
             
@@ -60,6 +71,8 @@ class RecordingService: NSObject {
         
         audioRecorder?.stop()
         isRecording = false
+        
+        playStopSound() // 録音停止音
         
         if let url = recordingURL {
             print("録音ファイル: \(url.path)")
