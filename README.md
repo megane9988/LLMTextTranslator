@@ -1,252 +1,246 @@
 # LLM Text Translator
 
-A macOS menu bar application that provides real-time text translation and voice transcription using OpenAI's GPT and Whisper APIs.
+OpenAIのGPTとWhisper APIを使用したmacOS専用のメニューバーアプリケーション。リアルタイムテキスト翻訳と音声文字起こし機能を提供する。
 
-## Features
+## 機能
 
-### 🌐 Text Translation
-- Translate selected text between English and Japanese automatically
-- Uses OpenAI's GPT model for high-quality translations
-- Quick access via keyboard shortcut
-- Results displayed in floating popup windows
-- Automatic clipboard copy of translation results
+### 🌐 テキスト翻訳
+- 選択したテキストを英語⇔日本語で自動翻訳
+- GPTモデルによる高品質な翻訳
+- ショートカットキーで瞬時にアクセス
+- フローティング ポップアップウィンドウで結果表示
+- 翻訳結果の自動クリップボードコピー
 
-### 🎤 Voice Recording & Transcription
-- Record audio and convert speech to text using Whisper API
-- Automatic filler word removal for cleaner transcriptions
-- Support for Japanese language recognition
-- Toggle recording with keyboard shortcut
+### 🎙️ 音声録音・文字起こし
+- Whisper APIを使用した音声テキスト変換
+- フィラー音自動除去で読みやすいテキスト生成
+- 日本語音声認識対応
+- ショートカットキーで録音切り替え
 
-### 📱 Menu Bar Integration
-- Lightweight menu bar app with globe icon (🌐)
-- Test functions available through menu
-- Clean, minimal interface
-- **Auto-launch at login**: Automatically start the app when you log in to macOS
+### 📱 メニューバー統合
+- 軽量メニューバーアプリ（🌐アイコン）
+- メニューからテスト機能にアクセス
+- クリーンでミニマルなインターフェース
+- **ログイン時自動起動**: macOSログイン時にアプリを自動起動
 
-### ⚙️ Auto-Launch at Login
-- Configure the app to start automatically when you log in to macOS
-- Uses Apple's modern Service Management framework (SMAppService)
-- Secure and system-integrated approach
-- Easy toggle through menu bar options
+### ⚙️ ログイン時自動起動
+- macOSログイン時にアプリを自動起動する設定
+- Apple純正のService Management framework (SMAppService) を使用
+- セキュアでシステム統合されたアプローチ
+- メニューバーから簡単に切り替え可能
 
-## System Requirements
+## システム要件
 
-- macOS 10.14 or later
-- Microphone access for voice features
-- Internet connection for API calls
-- Valid OpenAI API key
+- macOS 10.14以降
+- 音声機能使用時はマイク権限が必要
+- API呼び出し用のインターネット接続
+- 有効なOpenAI APIキー
 
-## Installation
+## インストール
 
-1. Clone this repository:
+1. リポジトリをクローン:
    ```bash
    git clone https://github.com/megane9988/LLMTextTranslator.git
    cd LLMTextTranslator
    ```
 
-2. Open `LLMTextTranslator.xcodeproj` in Xcode
+2. Xcodeで`LLMTextTranslator.xcodeproj`を開く
 
-3. Build and run the project
+3. プロジェクトをビルドして実行
 
-## Setup
+## セットアップ
 
-### Auto-Launch Configuration
+### ログイン時自動起動の設定
 
-The app can automatically start when you log in to macOS for convenience:
+便利なようにアプリをmacOSログイン時に自動起動させることができる:
 
-1. **Launch the app** - it will appear as a globe icon (🌐) in your menu bar
-2. **Click the globe icon** to open the menu
-3. **Toggle "ログイン時に自動起動"** - a checkmark (✓) indicates it's enabled
-4. **No restart required** - the setting takes effect immediately
+1. **アプリを起動** - メニューバーに地球アイコン（🌐）が表示される
+2. **地球アイコンをクリック** - メニューを開く
+3. **「ログイン時に自動起動」を切り替え** - チェックマーク（✓）が有効状態を示す
+4. **再起動不要** - 設定は即座に有効になる
 
-**Technical Details:**
-- ✅ Uses Apple's modern Service Management framework (SMAppService)
-- ✅ Secure system-level integration
-- ✅ Follows macOS best practices for login items
-- ✅ Easy to enable/disable through menu interface
-- ✅ No additional permissions required
+**技術詳細:**
+- ✅ Apple純正のService Management framework (SMAppService) を使用
+- ✅ セキュアなシステムレベル統合
+- ✅ macOSベストプラクティスに準拠
+- ✅ メニューインターフェースから簡単に有効/無効切り替え
+- ✅ 追加権限不要
 
-### API Key Configuration
+### OpenAI APIキー設定
 
-⚠️ **Important**: You need to configure your OpenAI API key before using the app.
+⚠️ **重要**: アプリを使用する前にOpenAI APIキーの設定が必要だ。
 
-The app securely stores your API key in the macOS Keychain for maximum security. To set up your API key:
+アプリはAPIキーを最大限のセキュリティでmacOS Keychainに安全に保存する。APIキー設定手順:
 
-1. **Launch the app** - it will appear as a globe icon (🌐) in your menu bar
-2. **Click the globe icon** to open the menu
-3. **Select "API Key Settings"** from the dropdown menu
-4. **Enter your OpenAI API key** in the dialog box (starts with `sk-proj-...`)
-5. **Click "Save"** - the key will be securely stored in Keychain
+1. **アプリを起動** - メニューバーに地球アイコン（🌐）が表示される
+2. **地球アイコンをクリック** - ドロップダウンメニューを開く
+3. **「API Key Settings」を選択** - メニューから選択
+4. **OpenAI APIキーを入力** - ダイアログボックスに入力（`sk-proj-...`で始まる）
+5. **「保存」をクリック** - キーがKeychainに安全に保存される
 
-**Security Features:**
-- ✅ API keys are stored in macOS Keychain (system-level encryption)
-- ✅ No hardcoded credentials in source code
-- ✅ Keys can be easily updated or removed through the menu
-- ✅ Automatic error handling for missing/invalid keys
+**セキュリティ機能:**
+- ✅ APIキーはmacOS Keychain（システムレベル暗号化）に保存
+- ✅ ソースコードにハードコーディングされた認証情報なし
+- ✅ メニューから簡単にキーの更新・削除可能
+- ✅ 不正・無効キーの自動エラーハンドリング
 
-**To update or remove your API key:**
-- Use the same "API Key Settings" menu option
-- Leave the field empty and click "Save" to remove the key
+**APIキーの更新・削除方法:**
+- 同じ「API Key Settings」メニューオプションを使用
+- フィールドを空にして「保存」をクリックするとキーが削除される
 
-### Permissions
+### 権限設定
 
-The app requires the following permissions:
+アプリは以下の権限が必要:
 
-#### 1. Accessibility Permission
-- Required for global keyboard shortcuts and text selection
-- The app will prompt you to enable this in System Preferences
-- Go to: System Preferences → Security & Privacy → Privacy → Accessibility
-- Add and enable "LLM Text Translator"
+#### 1. アクセシビリティ権限
+- グローバルキーボードショートカットとテキスト選択に必要
+- アプリがシステム環境設定での有効化を促す
+- 手順: システム環境設定 → セキュリティとプライバシー → プライバシー → アクセシビリティ
+- 「LLM Text Translator」を追加して有効化
 
-#### 2. Microphone Permission
-- Required for voice recording features
-- The app will request this permission automatically
-- If denied, go to: System Preferences → Security & Privacy → Privacy → Microphone
-- Enable "LLM Text Translator"
+#### 2. マイク権限
+- 音声録音機能に必要
+- アプリが自動的に権限をリクエスト
+- 拒否された場合: システム環境設定 → セキュリティとプライバシー → プライバシー → マイク
+- 「LLM Text Translator」を有効化
 
-## Usage
+## 使用方法
 
-### Text Translation
+### テキスト翻訳
 
-1. Select any text in any application
-2. Press `⌘ + ⌥ + ⇧ + T`
-3. The selected text will be copied and translated
-4. Translation result appears in a floating popup window
-5. The result is automatically copied to your clipboard
+1. 任意のアプリケーションでテキストを選択
+2. `⌘ + ⌥ + ⇧ + T` を押す
+3. 選択されたテキストがコピーされて翻訳される
+4. フローティングポップアップウィンドウに翻訳結果が表示される
+5. 結果が自動的にクリップボードにコピーされる
 
-**Note**: The app automatically detects the language and translates between English and Japanese.
+**注意**: アプリは言語を自動検出し、英語⇔日本語間で翻訳する。
 
-### Voice Recording
+### 音声録音
 
-1. Press `⌘ + ⌥ + ⇧ + R` to start recording
-2. Speak into your microphone
-3. Press the same shortcut again to stop recording
-4. The transcribed text will appear in a floating popup window
-5. The result is automatically copied to your clipboard
+1. `⌘ + ⌥ + ⇧ + R` を押して録音開始
+2. マイクに向かって話す
+3. 同じショートカットをもう一度押して録音停止
+4. 文字起こしされたテキストがフローティングポップアップウィンドウに表示される
+5. 結果が自動的にクリップボードにコピーされる
 
-### Menu Bar Options
+### メニューバーオプション
 
-Click the globe icon (🌐) in your menu bar to access:
-- **Test Translation**: Test the translation feature
-- **Test Recording**: Test the recording feature
-- **API Key Settings**: Configure your OpenAI API key securely
-- **ログイン時に自動起動**: Toggle auto-launch at login (ON/OFF with checkmark)
-- **Quit**: Exit the application
+メニューバーの地球アイコン（🌐）をクリックすると以下にアクセス:
+- **Test Translation**: 翻訳機能のテスト
+- **Test Recording**: 録音機能のテスト
+- **API Key Settings**: OpenAI APIキーの安全な設定
+- **ログイン時に自動起動**: ログイン時自動起動の切り替え（チェックマークでON/OFF表示）
+- **Quit**: アプリケーションの終了
 
-## Keyboard Shortcuts
+## キーボードショートカット
 
-| Shortcut | Function |
+| ショートカット | 機能 |
 |----------|----------|
-| `⌘ + ⌥ + ⇧ + T` | Translate selected text |
-| `⌘ + ⌥ + ⇧ + R` | Toggle voice recording |
+| `⌘ + ⌥ + ⇧ + T` | 選択したテキストを翻訳 |
+| `⌘ + ⌥ + ⇧ + R` | 音声録音の切り替え |
 
-## Troubleshooting
+## トラブルシューティング
 
-### "Accessibility permission required" message
-- Go to System Preferences → Security & Privacy → Privacy → Accessibility
-- Click the lock icon and enter your password
-- Add "LLM Text Translator" to the list and check the box
+### 「アクセシビリティ権限が必要」メッセージ
+- システム環境設定 → セキュリティとプライバシー → プライバシー → アクセシビリティ
+- 鍵アイコンをクリックしてパスワードを入力
+- 「LLM Text Translator」をリストに追加してチェックボックスを有効化
 
-### "Microphone permission required" message
-- Go to System Preferences → Security & Privacy → Privacy → Microphone
-- Add "LLM Text Translator" to the list and check the box
+### 「マイク権限が必要」メッセージ
+- システム環境設定 → セキュリティとプライバシー → プライバシー → マイク
+- 「LLM Text Translator」をリストに追加してチェックボックスを有効化
 
-### Translation not working
-- Ensure you have configured your OpenAI API key via "API Key Settings" in the menu
-- Check your internet connection
-- Verify that text is properly selected before using the shortcut
+### 翻訳が動作しない
+- メニューの「API Key Settings」でOpenAI APIキーが設定されていることを確認
+- インターネット接続を確認
+- ショートカット使用前にテキストが正しく選択されていることを確認
 
-### Recording not working
-- Check microphone permissions
-- Ensure your microphone is working in other applications
-- Verify OpenAI API key is configured via the menu
+### 録音が動作しない
+- マイク権限を確認
+- 他のアプリケーションでマイクが動作することを確認
+- メニューからOpenAI APIキーが設定されていることを確認
 
-### API Error Messages
-- "APIキーが設定されていません": Use "API Key Settings" menu to configure your key
-- "Network Error": Check your internet connection
-- "API エラー": Verify your OpenAI API key is correct and has sufficient credits
+### APIエラーメッセージ
+- 「APIキーが設定されていません」: メニューの「API Key Settings」でキーを設定
+- 「ネットワークエラー」: インターネット接続を確認
+- 「API エラー」: OpenAI APIキーが正しく、十分なクレジットがあることを確認
 
-## Development
+## 開発
 
-### Project Structure
+### プロジェクト構造
 ```
 LLMTextTranslator/
-├── AppDelegate.swift          # Main application logic
-├── LLMTextTranslatorApp.swift # App entry point
-├── ContentView.swift          # SwiftUI view (minimal)
-├── KeychainHelper.swift       # Secure API key management
-├── Info.plist                 # App configuration
-└── LLMTextTranslator.entitlements # Security entitlements
+├── AppDelegate.swift                      # メインアプリケーションロジック
+├── LLMTextTranslatorApp.swift             # アプリエントリーポイント
+├── ContentView.swift                      # SwiftUIビュー（最小限）
+├── KeychainHelper.swift                   # セキュアAPIキー管理
+├── LaunchAtLoginManager.swift             # ログイン時自動起動管理
+├── Info.plist                             # アプリ設定
+├── LLMTextTranslator.entitlements         # セキュリティエンタイトルメント
+├── Coordinators/
+│   └── ApplicationCoordinator.swift       # アプリケーション全体の調整
+├── Managers/
+│   ├── ClipboardManager.swift             # クリップボード管理
+│   ├── GlobalHotKeyManager.swift          # グローバルホットキー管理
+│   ├── PermissionManager.swift            # 権限管理
+│   └── StatusBarManager.swift             # ステータスバー管理
+├── Services/
+│   ├── OpenAIService.swift                # OpenAI API統合
+│   └── RecordingService.swift             # 録音サービス
+├── ViewModels/
+│   ├── MenuBarViewModel.swift             # メニューバービューモデル
+│   └── PopupViewModel.swift               # ポップアップビューモデル
+└── Views/
+    ├── PopupWindow.swift                  # ポップアップウィンドウ
+    └── SettingsWindow.swift               # 設定ウィンドウ
 ```
 
-### Key Components
+### 主要コンポーネント
 
-- **AppDelegate.swift**: Contains all the main functionality including API calls, recording, UI management, and auto-launch logic
-- **LaunchAtLoginManager.swift**: Handles auto-launch at login using SMAppService framework
-- **KeychainHelper.swift**: Secure API key storage and retrieval using macOS Keychain
-- **Menu Bar Integration**: Uses `NSStatusItem` for menu bar presence
-- **Global Shortcuts**: Implemented using `NSEvent.addGlobalMonitorForEvents`
-- **API Integration**: Direct HTTP calls to OpenAI's APIs
-- **Permissions**: Handles accessibility and microphone permissions
-- **Auto-Launch**: Modern SMAppService implementation for login items
+- **ApplicationCoordinator.swift**: アプリケーション全体の調整とデリゲート管理
+- **LaunchAtLoginManager.swift**: SMAppServiceフレームワークを使用したログイン時自動起動処理
+- **KeychainHelper.swift**: macOS Keychainを使用したセキュアAPIキー保存・取得
+- **StatusBarManager.swift**: `NSStatusItem`を使用したメニューバー統合
+- **GlobalHotKeyManager.swift**: `NSEvent.addGlobalMonitorForEvents`を使用したグローバルショートカット実装
+- **OpenAIService.swift**: OpenAI APIへの直接HTTP呼び出し
+- **PermissionManager.swift**: アクセシビリティとマイク権限の処理
+- **RecordingService.swift**: AVFoundationを使用した音声録音
+- **PopupWindow.swift**: `NSWindow`を使用したフローティングポップアップ
 
-### Building from Source
+### ソースからのビルド
 
-1. Ensure you have Xcode installed
-2. Open the project in Xcode
-3. Configure your development team in project settings
-4. Build and run
+1. Xcodeがインストールされていることを確認
+2. Xcodeでプロジェクトを開く
+3. プロジェクト設定で開発チームを設定
+4. ビルドして実行
 
-## Security Notes
+### アーキテクチャ
 
-- The app requires accessibility permissions to monitor global keystrokes
-- Microphone access is needed for voice recording
-- **API keys are securely stored in macOS Keychain** - never hardcoded or stored in plain text
-- The app runs as a background menu bar application
-- All sensitive data is encrypted using system-level security
+このアプリケーションはCoordinatorパターンとMVVMアーキテクチャを組み合わせて使用:
 
-## License
+- **Coordinator**: アプリケーション全体のフロー管理
+- **ViewModels**: UI状態とビジネスロジックの管理  
+- **Services**: 外部API呼び出しとシステムサービス
+- **Managers**: システムレベルの機能（クリップボード、権限、ホットキー等）
+- **Delegates**: コンポーネント間の通信
+
+## セキュリティ注意事項
+
+- アプリはグローバルキーストロークを監視するためアクセシビリティ権限が必要
+- 音声録音のためマイクアクセスが必要
+- **APIキーはmacOS Keychainに安全に保存** - ハードコーディングやプレーンテキスト保存なし
+- アプリはバックグラウンドメニューバーアプリケーションとして動作
+- すべての機密データはシステムレベルセキュリティで暗号化
+
+## ライセンス
 
 Copyright © 2025 9988 megane. All rights reserved.
 
-## Contributing
+## 貢献
 
-This project uses OpenAI's APIs for translation and transcription. Make sure you have appropriate API access and understand OpenAI's usage policies.
-
----
-
-**Note**: This app is designed for personal use and development purposes. Ensure you comply with OpenAI's terms of service and usage policies when using their APIs.
+このプロジェクトは翻訳と文字起こしにOpenAIのAPIを使用している。適切なAPIアクセスがあることを確認し、OpenAIの使用ポリシーを理解すること。
 
 ---
 
-## 日本語版説明 (Japanese Documentation)
-
-### 概要
-LLM Text Translatorは、OpenAIのGPTとWhisper APIを使用して、リアルタイムでテキスト翻訳と音声文字起こしを行うmacOSメニューバーアプリケーションです。
-
-### 主な機能
-- **テキスト翻訳**: 選択したテキストを英語と日本語間で自動翻訳
-- **音声録音・文字起こし**: 音声をテキストに変換（フィラー音除去機能付き）
-- **メニューバー統合**: 軽量で使いやすいメニューバーアプリ
-- **ログイン時自動起動**: macOSログイン時にアプリを自動起動する機能
-
-### キーボードショートカット
-- `⌘ + ⌥ + ⇧ + T`: 選択したテキストを翻訳
-- `⌘ + ⌥ + ⇧ + R`: 音声録音の開始/停止
-
-### 必要な権限
-1. **アクセシビリティ権限**: システム環境設定 → セキュリティとプライバシー → プライバシー → アクセシビリティ
-2. **マイクロフォン権限**: システム環境設定 → セキュリティとプライバシー → プライバシー → マイクロフォン
-
-### セットアップ
-1. OpenAI APIキーを取得
-2. アプリを起動してメニューバーの🌐アイコンをクリック
-3. "API Key Settings"を選択してAPIキーを安全に設定
-4. アプリをビルドして実行
-
-**セキュリティ機能:**
-- APIキーはmacOS Keychainに暗号化して保存
-- ソースコードにはAPIキーをハードコーディングしない
-- メニューから簡単にキーの更新・削除が可能
-
-詳細については上記の英語版ドキュメントをご参照ください。
+**注意**: このアプリは個人使用と開発目的で設計されている。OpenAIのAPIを使用する際は、利用規約と使用ポリシーに準拠すること。
