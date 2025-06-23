@@ -6,7 +6,6 @@ class PopupWindow {
     // ウィンドウのデフォルト設定
     private let defaultWidth: CGFloat = 600
     private let defaultHeight: CGFloat = 400
-    private let autoCloseDelay: TimeInterval = 8.0
     
     // MARK: - ポップアップ表示
     func showPopup(text: String, title: String = "Translation Result") {
@@ -32,8 +31,6 @@ class PopupWindow {
         // クリップボードにコピー
         copyToClipboard(text: text)
         
-        // 自動で閉じるタイマーを設定
-        scheduleAutoClose()
         
         // デバッグ用
         print("ポップアップウィンドウを表示: \(text.prefix(50))...")
@@ -62,38 +59,48 @@ class PopupWindow {
         window.isMovable = true
         window.minSize = NSSize(width: 300, height: 200)
         
-        // テキストフィールドを作成
-        let textField = createTextField(text: text)
-        window.contentView?.addSubview(textField)
+        // スクロール可能なテキストビューを作成
+        let scrollView = createScrollableTextView(text: text)
+        window.contentView?.addSubview(scrollView)
         
         return window
     }
     
-    private func createTextField(text: String) -> NSTextField {
-        let textField = NSTextField(wrappingLabelWithString: text)
-        
-        textField.frame = NSRect(
+    private func createScrollableTextView(text: String) -> NSScrollView {
+        let scrollView = NSScrollView()
+        scrollView.frame = NSRect(
             x: 20, 
             y: 20, 
             width: defaultWidth - 40, 
             height: defaultHeight - 40
         )
         
-        // テキストフィールドのスタイル設定
-        textField.font = NSFont.systemFont(ofSize: 16)
-        textField.textColor = NSColor.labelColor
-        textField.backgroundColor = NSColor.textBackgroundColor
-        textField.drawsBackground = true
-        textField.isSelectable = true
-        textField.isEditable = false
-        textField.alignment = .left
-        textField.lineBreakMode = .byWordWrapping
-        textField.maximumNumberOfLines = 0
-        textField.preferredMaxLayoutWidth = defaultWidth - 40
+        // スクロールビューの設定
+        scrollView.hasVerticalScroller = true
+        scrollView.hasHorizontalScroller = false
+        scrollView.autohidesScrollers = false
+        scrollView.borderType = .bezelBorder
         
-        print("テキストフィールドのフレーム: \(textField.frame)")
+        // テキストビューの作成
+        let textView = NSTextView()
+        textView.frame = NSRect(x: 0, y: 0, width: defaultWidth - 60, height: defaultHeight - 60)
+        textView.string = text
+        textView.isEditable = false
+        textView.isSelectable = true
+        textView.font = NSFont.systemFont(ofSize: 16)
+        textView.textColor = NSColor.labelColor
+        textView.backgroundColor = NSColor.textBackgroundColor
+        textView.isRichText = false
+        textView.isVerticallyResizable = true
+        textView.isHorizontallyResizable = false
+        textView.textContainer?.widthTracksTextView = true
+        textView.textContainer?.containerSize = NSSize(width: defaultWidth - 60, height: CGFloat.greatestFiniteMagnitude)
         
-        return textField
+        scrollView.documentView = textView
+        
+        print("スクロールビューのフレーム: \(scrollView.frame)")
+        
+        return scrollView
     }
     
     private func copyToClipboard(text: String) {
@@ -103,11 +110,6 @@ class PopupWindow {
         print("テキストをクリップボードにコピーした")
     }
     
-    private func scheduleAutoClose() {
-        DispatchQueue.main.asyncAfter(deadline: .now() + autoCloseDelay) { [weak self] in
-            self?.closeCurrentWindow()
-        }
-    }
     
     // MARK: - ウィンドウ管理
     func closeCurrentWindow() {
@@ -132,6 +134,17 @@ class PopupWindow {
         )
         
         window.setFrame(newFrame, display: true, animate: true)
+        
+        // スクロールビューのサイズも更新
+        if let scrollView = window.contentView?.subviews.first as? NSScrollView {
+            scrollView.frame = NSRect(
+                x: 20,
+                y: 20,
+                width: width - 40,
+                height: height - 40
+            )
+        }
+        
         print("ウィンドウサイズを変更: \(width) x \(height)")
     }
 }
