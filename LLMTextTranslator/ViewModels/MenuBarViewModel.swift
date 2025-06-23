@@ -85,7 +85,7 @@ class MenuBarViewModel: ObservableObject {
     
     // MARK: - ステータス情報
     var statusIcon: String {
-        return isRecording ? "🔴" : "🌐"
+        return isRecording ? "record.circle.fill" : "globe"
     }
     
     var launchAtLoginMenuState: Bool {

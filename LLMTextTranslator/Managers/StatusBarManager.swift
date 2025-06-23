@@ -19,12 +19,12 @@ class StatusBarManager {
         case translating
         case transcribing
         
-        var title: String {
+        var symbolName: String {
             switch self {
-            case .normal: return "🌐"
-            case .recording: return "🔴"
-            case .translating: return "⏳"
-            case .transcribing: return "🎙️"
+            case .normal: return "globe"
+            case .recording: return "record.circle.fill"
+            case .translating: return "arrow.triangle.2.circlepath"
+            case .transcribing: return "mic.fill"
             }
         }
     }
@@ -45,8 +45,8 @@ class StatusBarManager {
             return
         }
         
-        button.title = IconState.normal.title
-        print("ステータスバーアイテムを設定した: \(button.title)")
+        setupButtonIcon(button, state: .normal)
+        print("ステータスバーアイテムを設定した: \(IconState.normal.symbolName)")
         
         setupMenu()
         print("ステータスバーのセットアップ完了")
@@ -112,8 +112,16 @@ class StatusBarManager {
     
     // MARK: - アイコン状態変更
     func setIconState(_ state: IconState) {
-        statusItem?.button?.title = state.title
-        print("ステータスバーアイコンを変更: \(state.title)")
+        guard let button = statusItem?.button else { return }
+        setupButtonIcon(button, state: state)
+        print("ステータスバーアイコンを変更: \(state.symbolName)")
+    }
+    
+    private func setupButtonIcon(_ button: NSStatusBarButton, state: IconState) {
+        let image = NSImage(systemSymbolName: state.symbolName, accessibilityDescription: nil)
+        image?.isTemplate = true
+        button.image = image
+        button.title = ""
     }
     
     // MARK: - 自動起動設定の更新
