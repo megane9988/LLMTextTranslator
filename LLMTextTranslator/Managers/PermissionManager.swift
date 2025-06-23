@@ -21,20 +21,30 @@ class PermissionManager {
         let bundleID = Bundle.main.bundleIdentifier ?? "Unknown"
         print("Bundle ID: \(bundleID)")
         
+        // まずは現在の権限状態をチェック
         let trusted = AXIsProcessTrusted()
         print("アクセシビリティ権限状態: \(trusted)")
         
-        if !trusted {
-            print("アクセシビリティ権限が必要だ")
-            requestAccessibilityPermission()
-        } else {
+        if trusted {
             print("アクセシビリティ権限は既に許可されている")
             delegate?.permissionManager(self, accessibilityPermissionGranted: true)
+        } else {
+            print("アクセシビリティ権限が必要だ")
+            requestAccessibilityPermission()
         }
     }
     
     private func requestAccessibilityPermission() {
-        // 最初にプロンプトありで権限要求
+        // システム環境設定を開く前に一度チェック
+        if AXIsProcessTrusted() {
+            delegate?.permissionManager(self, accessibilityPermissionGranted: true)
+            return
+        }
+        
+        // アラート表示
+        showAccessibilityAlert()
+        
+        // プロンプトありで権限要求（アラート後）
         let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue(): true]
         let promptResult = AXIsProcessTrustedWithOptions(options as CFDictionary)
         print("プロンプト後の権限状態: \(promptResult)")
@@ -45,9 +55,6 @@ class PermissionManager {
             return
         }
         
-        // アラート表示
-        showAccessibilityAlert()
-        
         // タイマーでチェック
         startPermissionTimer()
     }
@@ -55,26 +62,40 @@ class PermissionManager {
     private func showAccessibilityAlert() {
         let alert = NSAlert()
         alert.messageText = "アクセシビリティ権限が必要"
-        alert.informativeText = "システム環境設定でアプリを許可した後、アプリを再起動してください"
+        alert.informativeText = """
+        このアプリを使用するには、システム環境設定でアクセシビリティ権限を許可する必要があります。
+        
+        1. 「設定を開く」をクリック
+        2. 左側の「プライバシーとセキュリティ」を選択
+        3. 「アクセシビリティ」を選択
+        4. 「LLM Text Translator」をチェック
+        
+        注意：許可後は自動的に権限が有効になります。
+        """
         alert.addButton(withTitle: "OK")
         alert.addButton(withTitle: "設定を開く")
         
-        let response = alert.runModal()
-        if response == .alertSecondButtonReturn {
-            NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")!)
+        DispatchQueue.main.async {
+            let response = alert.runModal()
+            if response == .alertSecondButtonReturn {
+                if #available(macOS 13.0, *) {
+                    NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")!)
+                } else {
+                    NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security")!)
+                }
+            }
         }
     }
     
     private func startPermissionTimer() {
         var checkCount = 0
-        permissionTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] timer in
+        permissionTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self] timer in
             guard let self = self else {
                 timer.invalidate()
                 return
             }
             
             checkCount += 1
-            print("権限チェック中... (\(checkCount)/\(self.maxCheckCount))")
             
             if AXIsProcessTrusted() {
                 print("アクセシビリティ権限が許可された！")
@@ -84,9 +105,28 @@ class PermissionManager {
                     self.delegate?.permissionManager(self, accessibilityPermissionGranted: true)
                 }
             } else if checkCount >= self.maxCheckCount {
-                print("権限チェックタイムアウト。アプリを再起動してください。")
+                print("権限チェックタイムアウト。手動で権限を確認してください。")
                 timer.invalidate()
                 self.permissionTimer = nil
+                // タイムアウト後も定期的にチェックを継続
+                self.scheduleBackgroundPermissionCheck()
+            }
+        }
+    }
+    
+    private func scheduleBackgroundPermissionCheck() {
+        Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true) { [weak self] timer in
+            guard let self = self else {
+                timer.invalidate()
+                return
+            }
+            
+            if AXIsProcessTrusted() {
+                print("バックグラウンドチェック: アクセシビリティ権限が許可された！")
+                timer.invalidate()
+                DispatchQueue.main.async {
+                    self.delegate?.permissionManager(self, accessibilityPermissionGranted: true)
+                }
             }
         }
     }

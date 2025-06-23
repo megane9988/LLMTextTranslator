@@ -26,6 +26,10 @@
 	<true/>
 	<key>NSAppleEventsUsageDescription</key>
 	<string>This app needs accessibility access to capture selected text and provide translation features through global hotkeys.</string>
+	<key>NSAppleScriptEnabled</key>
+	<true/>
+	<key>NSAccessibilityUsageDescription</key>
+	<string>This app needs accessibility access to capture selected text and provide translation features through global hotkeys.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>We need access to your microphone to convert speech to text and provide translation features.</string>
 	<key>NSPrincipalClass</key>
