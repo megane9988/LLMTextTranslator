@@ -195,7 +195,7 @@ class OpenAIService {
                     
                     if let text = result["text"] as? String {
                         DispatchQueue.main.async {
-                            self.delegate?.openAIService(self, didReceiveTranscription: "文字起こし結果:\n\n\(text)")
+                            self.delegate?.openAIService(self, didReceiveTranscription: text)
                         }
                     } else if let error = result["error"] as? [String: Any] {
                         print("Whisper API エラー: \(error)")
