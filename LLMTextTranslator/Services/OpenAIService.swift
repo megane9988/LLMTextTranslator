@@ -37,9 +37,10 @@ class OpenAIService {
         request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         
-        let prompt = "Translate the following text between English and Japanese depending on its original language:\n\(text)"
+        // プロンプトを作成し、翻訳結果のみを返すよう指示
+        let prompt = "Translate the following text between English and Japanese depending on its original language. Return only the translated text without any explanations, notes, or other content:\n\(text)"
         let json: [String: Any] = [
-            "model": "gpt-3.5-turbo",
+            "model": "gpt-4.1-nano",
             "messages": [
                 ["role": "system", "content": "You are a translator."],
                 ["role": "user", "content": prompt]
