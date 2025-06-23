@@ -3,6 +3,7 @@ import Cocoa
 protocol GlobalHotKeyManagerDelegate: AnyObject {
     func globalHotKeyManager(_ manager: GlobalHotKeyManager, didTriggerTranslation: Void)
     func globalHotKeyManager(_ manager: GlobalHotKeyManager, didTriggerRecording: Void)
+    func globalHotKeyManager(_ manager: GlobalHotKeyManager, didTriggerTranscribeAndTranslate: Void)
 }
 
 class GlobalHotKeyManager {
@@ -14,6 +15,7 @@ class GlobalHotKeyManager {
     struct HotKey {
         static let translationKey: UInt16 = 17  // T key
         static let recordingKey: UInt16 = 15    // R key
+        static let transcribeAndTranslateKey: UInt16 = 14  // E key
         static let modifierFlags: NSEvent.ModifierFlags = [.command, .option, .shift]
     }
     
@@ -56,6 +58,10 @@ class GlobalHotKeyManager {
             print("録音ショートカット検出！")
             delegate?.globalHotKeyManager(self, didTriggerRecording: ())
             
+        case HotKey.transcribeAndTranslateKey:
+            print("文字起こし+翻訳ショートカット検出！")
+            delegate?.globalHotKeyManager(self, didTriggerTranscribeAndTranslate: ())
+            
         default:
             break
         }
@@ -70,10 +76,15 @@ class GlobalHotKeyManager {
         return "⌘ + ⌥ + ⇧ + R"
     }
     
+    func getTranscribeAndTranslateShortcut() -> String {
+        return "⌘ + ⌥ + ⇧ + E"
+    }
+    
     func getAllShortcuts() -> [String: String] {
         return [
             "翻訳": getTranslationShortcut(),
-            "録音": getRecordingShortcut()
+            "録音": getRecordingShortcut(),
+            "録音+翻訳": getTranscribeAndTranslateShortcut()
         ]
     }
     
@@ -86,6 +97,7 @@ class GlobalHotKeyManager {
         print("登録されているショートカット:")
         print("- 翻訳: \(getTranslationShortcut())")
         print("- 録音: \(getRecordingShortcut())")
+        print("- 録音+翻訳: \(getTranscribeAndTranslateShortcut())")
     }
     
     // MARK: - クリーンアップ

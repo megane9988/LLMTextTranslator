@@ -145,6 +145,10 @@ class ApplicationCoordinator: ObservableObject {
         menuBarViewModel.toggleRecording()
     }
     
+    func executeTranscribeAndTranslateRecording() {
+        menuBarViewModel.toggleTranscribeAndTranslateRecording()
+    }
+    
     func executeShowAPIKeySettings() {
         settingsWindow.showAPIKeySettings()
     }
@@ -204,13 +208,23 @@ extension ApplicationCoordinator: OpenAIServiceDelegate {
 
 extension ApplicationCoordinator: RecordingServiceDelegate {
     func recordingService(_ service: RecordingService, didStartRecording: Bool) {
-        popupViewModel.showPopup(text: "録音中... ⌘ + ⌥ + ⇧ + R で停止")
+        switch menuBarViewModel.currentRecordingType {
+        case .transcribeOnly:
+            popupViewModel.showPopup(text: "録音中... ⌘ + ⌥ + ⇧ + R で停止")
+        case .transcribeAndTranslate:
+            popupViewModel.showPopup(text: "録音中（翻訳付き）... ⌘ + ⌥ + ⇧ + E で停止")
+        }
     }
     
     func recordingService(_ service: RecordingService, didStopRecording audioURL: URL?) {
         if let url = audioURL {
             print("録音ファイル: \(url.path)")
-            openAIService.transcribeAudio(from: url)
+            switch menuBarViewModel.currentRecordingType {
+            case .transcribeOnly:
+                openAIService.transcribeAudio(from: url)
+            case .transcribeAndTranslate:
+                openAIService.transcribeAndTranslateAudio(from: url)
+            }
         }
     }
     
@@ -275,6 +289,10 @@ extension ApplicationCoordinator: GlobalHotKeyManagerDelegate {
     
     func globalHotKeyManager(_ manager: GlobalHotKeyManager, didTriggerRecording: Void) {
         executeToggleRecording()
+    }
+    
+    func globalHotKeyManager(_ manager: GlobalHotKeyManager, didTriggerTranscribeAndTranslate: Void) {
+        executeTranscribeAndTranslateRecording()
     }
 }
 

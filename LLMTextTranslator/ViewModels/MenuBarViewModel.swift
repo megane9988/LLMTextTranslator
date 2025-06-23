@@ -1,10 +1,16 @@
 import Foundation
 import Combine
 
+enum RecordingType {
+    case transcribeOnly
+    case transcribeAndTranslate
+}
+
 @MainActor
 class MenuBarViewModel: ObservableObject {
     @Published var isRecording = false
     @Published var isLaunchAtLoginEnabled = false
+    @Published var currentRecordingType: RecordingType = .transcribeOnly
     
     // 依存関係
     private let launchAtLoginManager: LaunchAtLoginManager
@@ -55,8 +61,15 @@ class MenuBarViewModel: ObservableObject {
     }
     
     func toggleRecording() {
+        currentRecordingType = .transcribeOnly
         isRecording.toggle()
         print("録音状態を切り替え: \(isRecording)")
+    }
+    
+    func toggleTranscribeAndTranslateRecording() {
+        currentRecordingType = .transcribeAndTranslate
+        isRecording.toggle()
+        print("文字起こし+翻訳録音状態を切り替え: \(isRecording)")
     }
     
     // MARK: - 自動起動設定管理
