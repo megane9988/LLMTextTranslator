@@ -4,6 +4,7 @@ protocol GlobalHotKeyManagerDelegate: AnyObject {
     func globalHotKeyManager(_ manager: GlobalHotKeyManager, didTriggerTranslation: Void)
     func globalHotKeyManager(_ manager: GlobalHotKeyManager, didTriggerRecording: Void)
     func globalHotKeyManager(_ manager: GlobalHotKeyManager, didTriggerTranscribeAndTranslate: Void)
+    func globalHotKeyManager(_ manager: GlobalHotKeyManager, didTriggerEscapeKey: Void)
 }
 
 class GlobalHotKeyManager {
@@ -16,6 +17,7 @@ class GlobalHotKeyManager {
         static let translationKey: UInt16 = 17  // T key
         static let recordingKey: UInt16 = 15    // R key
         static let transcribeAndTranslateKey: UInt16 = 14  // E key
+        static let escapeKey: UInt16 = 53  // ESC key
         static let modifierFlags: NSEvent.ModifierFlags = [.command, .option, .shift]
     }
     
@@ -43,6 +45,13 @@ class GlobalHotKeyManager {
     // MARK: - キーイベント処理
     private func handleKeyEvent(_ event: NSEvent) {
         print("キーイベント検出: keyCode=\(event.keyCode), modifiers=\(event.modifierFlags)")
+        
+        // ESCキーは修飾キーなしでも処理
+        if event.keyCode == HotKey.escapeKey {
+            print("ESCキー検出！")
+            delegate?.globalHotKeyManager(self, didTriggerEscapeKey: ())
+            return
+        }
         
         // 修飾キーの確認
         guard event.modifierFlags.contains(HotKey.modifierFlags) else {

@@ -149,6 +149,12 @@ class ApplicationCoordinator: ObservableObject {
         menuBarViewModel.toggleTranscribeAndTranslateRecording()
     }
     
+    func executeStopRecording() {
+        if menuBarViewModel.isRecording {
+            menuBarViewModel.setRecordingState(false)
+        }
+    }
+    
     func executeShowAPIKeySettings() {
         settingsWindow.showAPIKeySettings()
     }
@@ -293,6 +299,10 @@ extension ApplicationCoordinator: GlobalHotKeyManagerDelegate {
     
     func globalHotKeyManager(_ manager: GlobalHotKeyManager, didTriggerTranscribeAndTranslate: Void) {
         executeTranscribeAndTranslateRecording()
+    }
+    
+    func globalHotKeyManager(_ manager: GlobalHotKeyManager, didTriggerEscapeKey: Void) {
+        executeStopRecording()
     }
 }
 
