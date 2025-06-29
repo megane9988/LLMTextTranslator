@@ -44,57 +44,69 @@ class PopupWindow {
                 width: defaultWidth,
                 height: defaultHeight
             ),
-            styleMask: [.titled, .closable, .resizable],
+            styleMask: [.borderless, .closable, .resizable],
             backing: .buffered,
             defer: false
         )
-        
+
         // ウィンドウプロパティ設定
         window.isReleasedWhenClosed = false
         window.level = .floating
-        window.backgroundColor = NSColor.windowBackgroundColor
-        window.isOpaque = true
+        window.backgroundColor = .clear
+        window.isOpaque = false
         window.hasShadow = true
         window.title = title
         window.isMovable = true
         window.minSize = NSSize(width: 300, height: 200)
-        
+
+        // 背景用のカスタムビュー
+        let backgroundView = NSVisualEffectView()
+        backgroundView.frame = window.contentView!.bounds
+        backgroundView.autoresizingMask = [.width, .height]
+        backgroundView.blendingMode = .behindWindow
+        backgroundView.material = .ultraDark
+        backgroundView.state = .active
+        backgroundView.wantsLayer = true
+        backgroundView.layer?.cornerRadius = 16.0
+
+        window.contentView?.addSubview(backgroundView)
+
         // スクロール可能なテキストビューを作成
         let scrollView = createScrollableTextView(text: text)
-        window.contentView?.addSubview(scrollView)
-        
+        window.contentView?.addSubview(scrollView, positioned: .above, relativeTo: backgroundView)
+
         return window
     }
-    
+
     private func createScrollableTextView(text: String) -> NSScrollView {
         let scrollView = NSScrollView()
         scrollView.frame = NSRect(
-            x: 20, 
-            y: 20, 
-            width: defaultWidth - 40, 
+            x: 20,
+            y: 20,
+            width: defaultWidth - 40,
             height: defaultHeight - 40
         )
-        
+
         // スクロールビューの設定
+        scrollView.drawsBackground = false
         scrollView.hasVerticalScroller = true
         scrollView.hasHorizontalScroller = false
-        scrollView.autohidesScrollers = false
-        scrollView.borderType = .bezelBorder
-        
+        scrollView.autohidesScrollers = true
+        scrollView.borderType = .noBorder
+
         // テキストビューの作成
         let textView = NSTextView()
-        textView.frame = NSRect(x: 0, y: 0, width: defaultWidth - 60, height: defaultHeight - 60)
+        textView.frame = scrollView.bounds
         textView.string = text
         textView.isEditable = false
         textView.isSelectable = true
         textView.font = NSFont.systemFont(ofSize: 16)
-        textView.textColor = NSColor.labelColor
-        textView.backgroundColor = NSColor.textBackgroundColor
+        textView.textColor = NSColor.white
+        textView.backgroundColor = NSColor.clear
         textView.isRichText = false
         textView.isVerticallyResizable = true
         textView.isHorizontallyResizable = false
         textView.textContainer?.widthTracksTextView = true
-        textView.textContainer?.containerSize = NSSize(width: defaultWidth - 60, height: CGFloat.greatestFiniteMagnitude)
         
         scrollView.documentView = textView
         

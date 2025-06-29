@@ -302,7 +302,14 @@ extension ApplicationCoordinator: GlobalHotKeyManagerDelegate {
     }
     
     func globalHotKeyManager(_ manager: GlobalHotKeyManager, didTriggerEscapeKey: Void) {
-        executeStopRecording()
+        // 録音中かどうかでESCキーの動作を切り替える
+        if menuBarViewModel.isRecording {
+            // 録音中なら、録音を停止（キャンセル）する
+            executeStopRecording()
+        } else if popupWindow.isWindowVisible {
+            // 録音中でなく、ポップアップが表示されているなら、ポップアップを閉じる
+            popupWindow.closeCurrentWindow()
+        }
     }
 }
 
